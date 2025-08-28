@@ -1,0 +1,185 @@
+
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestione Budget Mensile</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .category { margin-bottom: 30px; }
+        canvas { max-width: 400px; max-height: 400px; }
+    </style>
+</head>
+<body>
+    <h1>Gestione Budget Mensile</h1>
+
+    <div class="category" id="Entrate">
+        <h2>Entrate generiche</h2>
+        <table>
+            <thead><tr><th>Descrizione</th><th>Importo</th><th>Azioni</th></tr></thead>
+            <tbody></tbody>
+        </table>
+        <button onclick="addRow('Entrate')">➕ Aggiungi Entrata</button>
+        <p><strong>Totale Entrate:</strong> <span id="totEntrate">0</span> €</p>
+    </div>
+
+    <div class="category" id="Uscite">
+        <h2>Uscite generiche</h2>
+        <table>
+            <thead><tr><th>Descrizione</th><th>Importo</th><th>Azioni</th></tr></thead>
+            <tbody></tbody>
+        </table>
+        <button onclick="addRow('Uscite')">➕ Aggiungi Uscita</button>
+        <p><strong>Totale Uscite:</strong> <span id="totUscite">0</span> €</p>
+    </div>
+
+    <div class="category" id="Accantonamenti">
+        <h2>Accantonamenti</h2>
+        <table>
+            <thead><tr><th>Descrizione</th><th>Importo</th><th>Azioni</th></tr></thead>
+            <tbody></tbody>
+        </table>
+        <button onclick="addRow('Accantonamenti')">➕ Aggiungi Accantonamento</button>
+        <p><strong>Totale Accantonamenti:</strong> <span id="totAccantonamenti">0</span> €</p>
+    </div>
+
+    <div class="category" id="Prelievi">
+        <h2>Prelievi dei risparmi</h2>
+        <table>
+            <thead><tr><th>Descrizione</th><th>Importo</th><th>Azioni</th></tr></thead>
+            <tbody></tbody>
+        </table>
+        <button onclick="addRow('Prelievi')">➕ Aggiungi Prelievo</button>
+        <p><strong>Totale Prelievi:</strong> <span id="totPrelievi">0</span> €</p>
+    </div>
+
+    <h3>💰 Saldo Entrate - Uscite: <span id="saldoDisponibile">0</span> €</h3>
+    <h3>🏦 Saldo Prelievi - Accantonamenti: <span id="saldoRisparmi">0</span> €</h3>
+
+    <h2>📊 Grafico a torta delle categorie</h2>
+    <canvas id="pieChart"></canvas>
+    <br>
+    <input type="text" id="fileName" placeholder="Nome file PNG">
+    <button onclick="downloadChart()">📥 Esporta grafico come PNG</button>
+
+    <h2>📤 Esporta dati</h2>
+    <button onclick="exportCSV()">💾 Esporta in CSV</button>
+
+    <h2>📥 Importa dati</h2>
+    <input type="file" id="csvFile" accept=".csv">
+    <button onclick="importCSV()">📂 Carica CSV</button>
+
+    <script>
+        const categories = ["Entrate", "Uscite", "Accantonamenti", "Prelievi"];
+
+        function addRow(category, desc='', amount='') {
+            const tbody = document.querySelector(`#${category} tbody`);
+            const row = document.createElement("tr");
+
+            row.innerHTML = `
+                <td><input type="text" value="${desc}"></td>
+                <td><input type="number" value="${amount}" onchange="updateTotals()"></td>
+                <td><button onclick="this.closest('tr').remove(); updateTotals()">❌</button></td>
+            `;
+            tbody.appendChild(row);
+            updateTotals();
+        }
+
+        function updateTotals() {
+            let totals = {};
+            categories.forEach(cat => {
+                const rows = document.querySelectorAll(`#${cat} tbody tr`);
+                let sum = 0;
+                rows.forEach(row => {
+                    const val = parseFloat(row.querySelectorAll("input")[1].value) || 0;
+                    sum += val;
+                });
+                document.getElementById("tot" + cat).textContent = sum.toFixed(2);
+                totals[cat] = sum;
+            });
+
+            document.getElementById("saldoDisponibile").textContent = (totals["Entrate"] - totals["Uscite"]).toFixed(2);
+            document.getElementById("saldoRisparmi").textContent = (totals["Prelievi"] - totals["Accantonamenti"]).toFixed(2);
+
+            updateChart(totals);
+        }
+
+        let chart;
+        function updateChart(totals) {
+            const ctx = document.getElementById('pieChart').getContext('2d');
+            const data = [totals["Entrate"], totals["Uscite"], totals["Accantonamenti"], totals["Prelievi"]];
+            const totalSum = data.reduce((a,b) => a + b, 0);
+            const labels = categories.map((cat, i) => `${cat} (${((data[i]/totalSum)*100 || 0).toFixed(1)}%)`);
+
+            if (chart) chart.destroy();
+            chart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: ['#4caf50','#f44336','#2196f3','#ff9800']
+                    }]
+                },
+                options: {
+                    responsive: false,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+
+        function downloadChart() {
+            const name = document.getElementById("fileName").value || "grafico_budget";
+            const link = document.createElement('a');
+            link.download = name + ".png";
+            link.href = document.getElementById('pieChart').toDataURL();
+            link.click();
+        }
+
+        function exportCSV() {
+            let csv = "Categoria,Descrizione,Importo\n";
+            categories.forEach(cat => {
+                const rows = document.querySelectorAll(`#${cat} tbody tr`);
+                rows.forEach(row => {
+                    const inputs = row.querySelectorAll("input");
+                    csv += `${cat},${inputs[0].value},${inputs[1].value}\n`;
+                });
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "budget_mensile.csv";
+            link.click();
+        }
+
+        function importCSV() {
+            const file = document.getElementById("csvFile").files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const lines = e.target.result.split("\n").slice(1);
+                categories.forEach(cat => {
+                    document.querySelector(`#${cat} tbody`).innerHTML = "";
+                });
+
+                lines.forEach(line => {
+                    const [cat, desc, amount] = line.split(",");
+                    if (categories.includes(cat)) {
+                        addRow(cat, desc, amount);
+                    }
+                });
+                updateTotals();
+            };
+            reader.readAsText(file);
+        }
+
+        categories.forEach(cat => addRow(cat));
+    </script>
+</body>
+</html>
