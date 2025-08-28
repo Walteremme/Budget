@@ -1,0 +1,16 @@
+
+{
+  "name": "Gestione Budget Mensile",
+  "short_name": "Budget",
+  "start_url": "gestione_budget_mensile_completo.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4caf50",
+  "icons": [
+    {
+      "src": "app_icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
