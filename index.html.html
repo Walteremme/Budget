@@ -58,7 +58,7 @@
     </div>
 
     <h3>💰 Saldo Entrate - Uscite: <span id="saldoDisponibile">0</span> €</h3>
-    <h3>🏦 Saldo Prelievi - Accantonamenti: <span id="saldoRisparmi">0</span> €</h3>
+    <h3>🏦 Saldo Accantonamenti - Prelievi: <span id="saldoRisparmi">0</span> €</h3>
 
     <h2>📊 Grafico a torta delle categorie</h2>
     <canvas id="pieChart"></canvas>
@@ -103,7 +103,7 @@
             });
 
             document.getElementById("saldoDisponibile").textContent = (totals["Entrate"] - totals["Uscite"]).toFixed(2);
-            document.getElementById("saldoRisparmi").textContent = (totals["Prelievi"] - totals["Accantonamenti"]).toFixed(2);
+            document.getElementById("saldoRisparmi").textContent = (totals["Accantonamenti"] - totals["Prelievi"]).toFixed(2);
 
             updateChart(totals);
         }
